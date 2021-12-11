@@ -1,16 +1,13 @@
 /* Constants */
 
 const DELAY = 300; // in ms
-const NUMBER_PIXELS_BETWEEN_INPUT_AND_INSTRUMENT = 5;
+const NUMBER_PIXELS_BETWEEN_INPUT_AND_INSTRUMENT = 20;
 
 /* Constants */
 
 const fs = require('fs');
-const robot = require('robotjs');
-const ncp = require('copy-paste');
 const readline = require('readline');
 const { execSync } = require('child_process');
-const mouseEvents = require('global-mouse-events');
 
 let settings = {
   areModulesLoaded: false,
@@ -28,10 +25,15 @@ if (fs.existsSync('settings.json')) {
 }
 
 if (!settings.areModulesLoaded) {
+  console.log('Скачиваю модули, может занять некоторое время..');
   execSync('npm i --loglevel=error');
   settings.areModulesLoaded = true;
   updateSettings();
 }
+
+const robot = require('robotjs');
+const ncp = require('copy-paste');
+const mouseEvents = require('global-mouse-events');
 
 const {
   getExchangeInfo,
@@ -116,6 +118,7 @@ const start = async () => {
 
   for await (const exchangeInfoSymbol of exchangeInfo.symbols) {
     const instrumentName = exchangeInfoSymbol.symbol;
+    console.log('instrumentName', instrumentName);
 
     if (!exchangeInfoSymbol.filters || !exchangeInfoSymbol.filters.length || !exchangeInfoSymbol.filters[2].stepSize) {
       console.log(`Не могу найти stepSize; symbol: ${instrumentName}`);
@@ -157,37 +160,48 @@ const start = async () => {
       result = result.toFixed(stepSizePrecision);
     }
 
-    result = parseFloat(result);
+    result = result.toString().replace('.', ',');
 
     robot.moveMouse(xAndYOfPlusButton.x, xAndYOfPlusButton.y);
     robot.mouseClick();
 
     await sleep(DELAY);
 
+    ncp.copy(instrumentName);
+
     robot.moveMouse(xAndYOfInstrumentInput.x, xAndYOfInstrumentInput.y);
     robot.mouseClick();
 
-    ncp.copy(instrumentName);
-
     await sleep(DELAY);
+
+    robot.moveMouse(
+      xAndYOfInstrumentInput.x + (NUMBER_PIXELS_BETWEEN_INPUT_AND_INSTRUMENT * 2),
+      xAndYOfInstrumentInput.y + NUMBER_PIXELS_BETWEEN_INPUT_AND_INSTRUMENT,
+    );
+
+    robot.mouseClick();
 
     robot.keyTap('v', ['control']);
 
-    robot.moveMouse(xAndYOfInstrumentInput.x, xAndYOfInstrumentInput.y + NUMBER_PIXELS_BETWEEN_INPUT_AND_INSTRUMENT);
+    await sleep(DELAY);
+
+    robot.moveMouse(
+      xAndYOfInstrumentInput.x + (NUMBER_PIXELS_BETWEEN_INPUT_AND_INSTRUMENT * 2),
+      xAndYOfInstrumentInput.y + (NUMBER_PIXELS_BETWEEN_INPUT_AND_INSTRUMENT * 2),
+    );
+
     robot.mouseClick();
 
     await sleep(DELAY);
-
-    robot.moveMouse(xAndYOfLimitInput.x, xAndYOfLimitInput.y);
-    robot.mouseClick();
 
     ncp.copy(result);
 
+    robot.moveMouse(xAndYOfLimitInput.x, xAndYOfLimitInput.y);
+    robot.mouseClick('left', true);
+
     await sleep(DELAY);
 
     robot.keyTap('v', ['control']);
-
-    await sleep(1000);
   }
 
   console.log('Process was finished');

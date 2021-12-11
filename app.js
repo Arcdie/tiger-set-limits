@@ -115,11 +115,12 @@ const start = async () => {
 
   const workAmount = Math.floor(depositForCalculate * shoulderOfDeposite);
 
-  let index = 0;
   const processedInstruments = [];
   let currentInstrumentName = 'tmp_value';
 
   while (1) {
+    ncp.copy('empty');
+
     robot.moveMouse(xAndYOfFirstInstrument.x, xAndYOfFirstInstrument.y);
     robot.mouseClick();
 
@@ -141,11 +142,18 @@ const start = async () => {
     );
 
     if (doesExistSymbolInProcessed) {
-      const nextInstrumentIndex = (processedInstruments.length - doesExistSymbolInProcessed.index) + 1;
+      const nextInstrumentIndex = (processedInstruments.length - doesExistSymbolInProcessed.index);
+
+      robot.moveMouse(xAndYOfFirstInstrument.x, xAndYOfFirstInstrument.y);
+      robot.mouseClick();
+
+      await sleep(DELAY);
 
       for (let i = 0; i < nextInstrumentIndex; i += 1) {
         robot.keyTap('down');
       }
+
+      await sleep(DELAY);
 
       robot.moveMouse(xAndYOfInstrumentInput.x, xAndYOfInstrumentInput.y);
       robot.mouseClick();
@@ -157,29 +165,37 @@ const start = async () => {
       await sleep(DELAY);
 
       currentName = ncp.paste().toString().trim();
-    } else {
+
+      if (currentName === currentInstrumentName) {
+        break;
+      }
+
+      currentInstrumentName = currentName;
+
       processedInstruments.push({
-        index,
+        index: processedInstruments.length,
         name: currentName,
       });
 
-      console.log('currentName', currentName);
+      // console.log('processedInstruments', processedInstruments);
+    } else {
+      processedInstruments.push({
+        index: processedInstruments.length,
+        name: currentName,
+      });
     }
 
-    /*
     const exchangeInfoSymbol = exchangeInfo.symbols.find(
       symbol => symbol.symbol === currentName,
     );
 
     if (!exchangeInfoSymbol) {
-      robot.keyTap('down');
       await sleep(DELAY);
       continue;
     }
 
     if (!exchangeInfoSymbol.filters || !exchangeInfoSymbol.filters.length || !exchangeInfoSymbol.filters[2].stepSize) {
       console.log(`Не могу найти stepSize; symbol: ${currentName}`);
-      index += 1;
       await sleep(DELAY);
       continue;
     }
@@ -188,7 +204,6 @@ const start = async () => {
 
     if (!instrumentPriceDoc) {
       console.log(`Не могу найти цену; symbol: ${currentName}`);
-      index += 1;
       await sleep(DELAY);
       continue;
     }
@@ -229,12 +244,6 @@ const start = async () => {
     robot.keyTap('v', ['control']);
 
     await sleep(DELAY);
-
-    processedInstruments.push(currentName);
-    index += 1;
-
-    await sleep(DELAY);
-    */
   }
 
   console.log('Process was finished');

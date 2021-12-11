@@ -47,18 +47,18 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
-let shoulderOfDeposite = false;
 let depositForCalculate = false;
+let shoulderOfDeposite = false;
+let xAndYOfFirstInstrument = false;
 let xAndYOfInstrumentInput = false;
 let xAndYOfLimitInput = false;
-let setCursorToFirstInstrument = false;
 
 const orderSteps = [
   'depositForCalculate',
   'shoulderOfDeposite',
+  'xAndYOfFirstInstrument',
   'xAndYOfInstrumentInput',
   'xAndYOfLimitInput',
-  'setCursorToFirstInstrument',
   'end',
 ];
 
@@ -81,6 +81,11 @@ const start = async () => {
     return askQuestion('shoulderOfDeposite');
   }
 
+  if (!xAndYOfFirstInstrument) {
+    console.log('Нажмите мышкой на 1-й элемент в списке');
+    return true;
+  }
+
   if (!xAndYOfInstrumentInput) {
     console.log('Нажмите мышкой на поле для ввода монеты');
     return true;
@@ -88,11 +93,6 @@ const start = async () => {
 
   if (!xAndYOfLimitInput) {
     console.log('Нажмите мышкой на поле для ввода лимита');
-    return true;
-  }
-
-  if (!setCursorToFirstInstrument) {
-    console.log('Нажмите мышкой на 1-й инструмент в списке');
     return true;
   }
 
@@ -115,10 +115,26 @@ const start = async () => {
 
   const workAmount = Math.floor(depositForCalculate * shoulderOfDeposite);
 
-  let currentInstrumentName = '';
+  let index = 0;
+  let currentInstrumentName = 'tmp_value';
 
   while (1) {
+    robot.moveMouse(xAndYOfFirstInstrument.x, xAndYOfFirstInstrument.y);
+    robot.mouseClick();
+
+    await sleep(DELAY);
+
+    for (let i = 0; i < index; i += 1) {
+      robot.keyTap('down');
+    }
+
+    await sleep(DELAY);
+
     robot.moveMouse(xAndYOfInstrumentInput.x, xAndYOfInstrumentInput.y);
+    robot.mouseClick();
+
+    await sleep(DELAY);
+
     robot.keyTap('c', ['control']);
 
     await sleep(DELAY);
@@ -136,15 +152,14 @@ const start = async () => {
     );
 
     if (!exchangeInfoSymbol) {
-      console.log(`Не могу найти совпадение; symbol: ${currentName}`);
-      robot.keyTap('down');
+      index += 1;
       await sleep(DELAY);
       continue;
     }
 
     if (!exchangeInfoSymbol.filters || !exchangeInfoSymbol.filters.length || !exchangeInfoSymbol.filters[2].stepSize) {
       console.log(`Не могу найти stepSize; symbol: ${currentName}`);
-      robot.keyTap('down');
+      index += 1;
       await sleep(DELAY);
       continue;
     }
@@ -153,7 +168,7 @@ const start = async () => {
 
     if (!instrumentPriceDoc) {
       console.log(`Не могу найти цену; symbol: ${currentName}`);
-      robot.keyTap('down');
+      index += 1;
       await sleep(DELAY);
       continue;
     }
@@ -195,7 +210,7 @@ const start = async () => {
 
     await sleep(DELAY);
 
-    robot.keyTap('down');
+    index += 1;
 
     await sleep(DELAY);
   }
@@ -286,8 +301,8 @@ mouseEvents.on('mouseup', (event) => {
       break;
     }
 
-    case 'setCursorToFirstInstrument': {
-      setCursorToFirstInstrument = true;
+    case 'xAndYOfFirstInstrument': {
+      xAndYOfFirstInstrument = { x, y };
       currentStep.incrementStep();
       return start();
       break;
@@ -303,7 +318,7 @@ const sleep = ms => {
 
 start();
 
-/* 
+/*
 setTimeout(() => {
   for (let i = 0; i < 10; i += 1) {
     robot.keyTap('down');

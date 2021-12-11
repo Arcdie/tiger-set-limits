@@ -49,18 +49,16 @@ const rl = readline.createInterface({
 
 let shoulderOfDeposite = false;
 let depositForCalculate = false;
-let xAndYOfPlusButton = false;
 let xAndYOfInstrumentInput = false;
-let xAndYOfInstrumentInput2 = false;
 let xAndYOfLimitInput = false;
+let setCursorToFirstInstrument = false;
 
 const orderSteps = [
   'depositForCalculate',
   'shoulderOfDeposite',
-  'xAndYOfPlusButton',
   'xAndYOfInstrumentInput',
-  'xAndYOfInstrumentInput2',
   'xAndYOfLimitInput',
+  'setCursorToFirstInstrument',
   'end',
 ];
 
@@ -83,23 +81,18 @@ const start = async () => {
     return askQuestion('shoulderOfDeposite');
   }
 
-  if (!xAndYOfPlusButton) {
-    console.log('Нажмите мышкой на кнопку +');
-    return true;
-  }
-
   if (!xAndYOfInstrumentInput) {
     console.log('Нажмите мышкой на поле для ввода монеты');
     return true;
   }
 
-  if (!xAndYOfInstrumentInput2) {
-    console.log('Нажмите мышкой на поле выбора монеты');
+  if (!xAndYOfLimitInput) {
+    console.log('Нажмите мышкой на поле для ввода лимита');
     return true;
   }
 
-  if (!xAndYOfLimitInput) {
-    console.log('Нажмите мышкой на поле для ввода лимита');
+  if (!setCursorToFirstInstrument) {
+    console.log('Нажмите мышкой на 1-й инструмент в списке');
     return true;
   }
 
@@ -122,25 +115,46 @@ const start = async () => {
 
   const workAmount = Math.floor(depositForCalculate * shoulderOfDeposite);
 
-  const differenceBetweenYValues = Math.abs(xAndYOfInstrumentInput.y - xAndYOfInstrumentInput2.y);
+  let currentInstrumentName = '';
 
-  for await (const exchangeInfoSymbol of exchangeInfo.symbols) {
-    const instrumentName = exchangeInfoSymbol.symbol;
-    console.log('instrumentName', instrumentName);
+  while (1) {
+    robot.moveMouse(xAndYOfInstrumentInput.x, xAndYOfInstrumentInput.y);
+    robot.keyTap('c', ['control']);
 
-    if (!exchangeInfoSymbol.filters || !exchangeInfoSymbol.filters.length || !exchangeInfoSymbol.filters[2].stepSize) {
-      console.log(`Не могу найти stepSize; symbol: ${instrumentName}`);
+    await sleep(DELAY);
+
+    const currentName = ncp.paste().toString().trim();
+
+    if (currentName === currentInstrumentName) {
+      break;
+    }
+
+    currentInstrumentName = currentName;
+
+    const exchangeInfoSymbol = exchangeInfo.symbols.find(
+      symbol => symbol.symbol === currentName,
+    );
+
+    if (!exchangeInfoSymbol) {
+      console.log(`Не могу найти совпадение; symbol: ${currentName}`);
       robot.keyTap('down');
-      await sleep(1000);
+      await sleep(DELAY);
       continue;
     }
 
-    const instrumentPriceDoc =  instrumentsPrices.find(doc => doc.symbol === instrumentName);
+    if (!exchangeInfoSymbol.filters || !exchangeInfoSymbol.filters.length || !exchangeInfoSymbol.filters[2].stepSize) {
+      console.log(`Не могу найти stepSize; symbol: ${currentName}`);
+      robot.keyTap('down');
+      await sleep(DELAY);
+      continue;
+    }
+
+    const instrumentPriceDoc =  instrumentsPrices.find(doc => doc.symbol === currentName);
 
     if (!instrumentPriceDoc) {
-      console.log(`Не могу найти цену; symbol: ${instrumentName}`);
+      console.log(`Не могу найти цену; symbol: ${currentName}`);
       robot.keyTap('down');
-      await sleep(1000);
+      await sleep(DELAY);
       continue;
     }
 
@@ -170,30 +184,6 @@ const start = async () => {
 
     result = result.toString().replace('.', ',');
 
-    robot.moveMouse(xAndYOfPlusButton.x, xAndYOfPlusButton.y);
-    robot.mouseClick();
-
-    await sleep(DELAY);
-
-    ncp.copy(instrumentName);
-
-    robot.moveMouse(xAndYOfInstrumentInput.x, xAndYOfInstrumentInput.y);
-    robot.mouseClick();
-
-    await sleep(DELAY);
-
-    robot.moveMouse(xAndYOfInstrumentInput2.x, xAndYOfInstrumentInput2.y);
-    robot.mouseClick();
-
-    robot.keyTap('v', ['control']);
-
-    await sleep(DELAY);
-
-    robot.moveMouse(xAndYOfInstrumentInput2.x, xAndYOfInstrumentInput2.y + differenceBetweenYValues);
-    robot.mouseClick();
-
-    await sleep(DELAY);
-
     ncp.copy(result);
 
     robot.moveMouse(xAndYOfLimitInput.x, xAndYOfLimitInput.y);
@@ -202,6 +192,12 @@ const start = async () => {
     await sleep(DELAY);
 
     robot.keyTap('v', ['control']);
+
+    await sleep(DELAY);
+
+    robot.keyTap('down');
+
+    await sleep(DELAY);
   }
 
   console.log('Process was finished');
@@ -276,13 +272,6 @@ mouseEvents.on('mouseup', (event) => {
   }
 
   switch (currentStep.stepName) {
-    case 'xAndYOfPlusButton': {
-      xAndYOfPlusButton = { x, y };
-      currentStep.incrementStep();
-      return start();
-      break;
-    }
-
     case 'xAndYOfInstrumentInput': {
       xAndYOfInstrumentInput = { x, y };
       currentStep.incrementStep();
@@ -290,15 +279,15 @@ mouseEvents.on('mouseup', (event) => {
       break;
     }
 
-    case 'xAndYOfInstrumentInput2': {
-      xAndYOfInstrumentInput2 = { x, y };
+    case 'xAndYOfLimitInput': {
+      xAndYOfLimitInput = { x, y };
       currentStep.incrementStep();
       return start();
       break;
     }
 
-    case 'xAndYOfLimitInput': {
-      xAndYOfLimitInput = { x, y };
+    case 'setCursorToFirstInstrument': {
+      setCursorToFirstInstrument = true;
       currentStep.incrementStep();
       return start();
       break;

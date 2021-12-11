@@ -126,7 +126,7 @@ const start = async () => {
 
   for await (const exchangeInfoSymbol of exchangeInfo.symbols) {
     const instrumentName = exchangeInfoSymbol.symbol;
-    console.log('instrumentName', instrumentName);
+    // console.log('instrumentName', instrumentName);
 
     if (!exchangeInfoSymbol.filters || !exchangeInfoSymbol.filters.length || !exchangeInfoSymbol.filters[2].stepSize) {
       console.log(`Не могу найти stepSize; symbol: ${instrumentName}`);
@@ -184,6 +184,8 @@ const start = async () => {
 
     robot.moveMouse(xAndYOfInstrumentInput2.x, xAndYOfInstrumentInput2.y);
     robot.mouseClick();
+
+    await sleep(DELAY);
 
     robot.keyTap('v', ['control']);
 

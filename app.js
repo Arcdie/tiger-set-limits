@@ -116,17 +116,12 @@ const start = async () => {
   const workAmount = Math.floor(depositForCalculate * shoulderOfDeposite);
 
   let index = 0;
+  const processedInstruments = [];
   let currentInstrumentName = 'tmp_value';
 
   while (1) {
     robot.moveMouse(xAndYOfFirstInstrument.x, xAndYOfFirstInstrument.y);
     robot.mouseClick();
-
-    await sleep(DELAY);
-
-    for (let i = 0; i < index; i += 1) {
-      robot.keyTap('down');
-    }
 
     await sleep(DELAY);
 
@@ -139,20 +134,45 @@ const start = async () => {
 
     await sleep(DELAY);
 
-    const currentName = ncp.paste().toString().trim();
+    let currentName = ncp.paste().toString().trim();
 
-    if (currentName === currentInstrumentName) {
-      break;
+    const doesExistSymbolInProcessed = processedInstruments.find(
+      instrument => instrument.name === currentName,
+    );
+
+    if (doesExistSymbolInProcessed) {
+      const nextInstrumentIndex = (processedInstruments.length - doesExistSymbolInProcessed.index) + 1;
+
+      for (let i = 0; i < nextInstrumentIndex; i += 1) {
+        robot.keyTap('down');
+      }
+
+      robot.moveMouse(xAndYOfInstrumentInput.x, xAndYOfInstrumentInput.y);
+      robot.mouseClick();
+
+      await sleep(DELAY);
+
+      robot.keyTap('c', ['control']);
+
+      await sleep(DELAY);
+
+      currentName = ncp.paste().toString().trim();
+    } else {
+      processedInstruments.push({
+        index,
+        name: currentName,
+      });
+
+      console.log('currentName', currentName);
     }
 
-    currentInstrumentName = currentName;
-
+    /*
     const exchangeInfoSymbol = exchangeInfo.symbols.find(
       symbol => symbol.symbol === currentName,
     );
 
     if (!exchangeInfoSymbol) {
-      index += 1;
+      robot.keyTap('down');
       await sleep(DELAY);
       continue;
     }
@@ -210,9 +230,11 @@ const start = async () => {
 
     await sleep(DELAY);
 
+    processedInstruments.push(currentName);
     index += 1;
 
     await sleep(DELAY);
+    */
   }
 
   console.log('Process was finished');

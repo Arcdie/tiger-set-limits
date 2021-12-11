@@ -1,7 +1,6 @@
 /* Constants */
 
 const DELAY = 300; // in ms
-const NUMBER_PIXELS_BETWEEN_INPUT_AND_INSTRUMENT = 20;
 
 /* Constants */
 
@@ -52,6 +51,7 @@ let shoulderOfDeposite = false;
 let depositForCalculate = false;
 let xAndYOfPlusButton = false;
 let xAndYOfInstrumentInput = false;
+let xAndYOfInstrumentInput2 = false;
 let xAndYOfLimitInput = false;
 
 const orderSteps = [
@@ -59,6 +59,7 @@ const orderSteps = [
   'shoulderOfDeposite',
   'xAndYOfPlusButton',
   'xAndYOfInstrumentInput',
+  'xAndYOfInstrumentInput2',
   'xAndYOfLimitInput',
   'end',
 ];
@@ -92,6 +93,11 @@ const start = async () => {
     return true;
   }
 
+  if (!xAndYOfInstrumentInput2) {
+    console.log('Нажмите мышкой на поле выбора монеты');
+    return true;
+  }
+
   if (!xAndYOfLimitInput) {
     console.log('Нажмите мышкой на поле для ввода лимита');
     return true;
@@ -115,6 +121,8 @@ const start = async () => {
   const instrumentsPrices = resultGetInstrumentsPrices.result;
 
   const workAmount = Math.floor(depositForCalculate * shoulderOfDeposite);
+
+  const differenceBetweenYValues = Math.abs(xAndYOfInstrumentInput.y - xAndYOfInstrumentInput2.y);
 
   for await (const exchangeInfoSymbol of exchangeInfo.symbols) {
     const instrumentName = exchangeInfoSymbol.symbol;
@@ -174,22 +182,14 @@ const start = async () => {
 
     await sleep(DELAY);
 
-    robot.moveMouse(
-      xAndYOfInstrumentInput.x + (NUMBER_PIXELS_BETWEEN_INPUT_AND_INSTRUMENT * 2),
-      xAndYOfInstrumentInput.y + NUMBER_PIXELS_BETWEEN_INPUT_AND_INSTRUMENT,
-    );
-
+    robot.moveMouse(xAndYOfInstrumentInput2.x, xAndYOfInstrumentInput2.y);
     robot.mouseClick();
 
     robot.keyTap('v', ['control']);
 
     await sleep(DELAY);
 
-    robot.moveMouse(
-      xAndYOfInstrumentInput.x + (NUMBER_PIXELS_BETWEEN_INPUT_AND_INSTRUMENT * 2),
-      xAndYOfInstrumentInput.y + (NUMBER_PIXELS_BETWEEN_INPUT_AND_INSTRUMENT * 2),
-    );
-
+    robot.moveMouse(xAndYOfInstrumentInput2.x, xAndYOfInstrumentInput2.y + differenceBetweenYValues);
     robot.mouseClick();
 
     await sleep(DELAY);
@@ -285,6 +285,13 @@ mouseEvents.on('mouseup', (event) => {
 
     case 'xAndYOfInstrumentInput': {
       xAndYOfInstrumentInput = { x, y };
+      currentStep.incrementStep();
+      return start();
+      break;
+    }
+
+    case 'xAndYOfInstrumentInput2': {
+      xAndYOfInstrumentInput2 = { x, y };
       currentStep.incrementStep();
       return start();
       break;
